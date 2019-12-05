@@ -540,7 +540,6 @@ int children_concat(int id){
     {
         int hold = p->pid;
         int length = 0 ; 
-        int digit ; 
         while (hold > 0 ){
           length++; 
           hold /=10;
