@@ -17,7 +17,7 @@ int
 sys_exit(void)
 {
   exit();
-  return 0;  // not reached
+  return 0;  
 }
 
 int
@@ -103,4 +103,13 @@ sys_getChildren(void)
   if (argint(0, &n) < 0)
     return -1;
   return children_concat(n);
+}
+
+int 
+sys_getCount(void)
+{
+  int n;
+  if (argint(0, &n) < 0)
+    return -1;
+  return myproc()->sc_count[n];
 }

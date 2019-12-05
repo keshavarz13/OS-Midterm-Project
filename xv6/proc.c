@@ -87,6 +87,10 @@ allocproc(void)
 
 found:
   p->state = EMBRYO;
+  int i = 0 ; 
+  for (i = 0 ; i < 40 ; i++) { 
+    p->sc_count[i] = 0;
+  }
   p->pid = nextpid++;
 
   release(&ptable.lock);
