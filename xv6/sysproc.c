@@ -95,3 +95,12 @@ sys_getppid(void)
 {
     return myproc()->parent->pid;
 }
+
+int 
+sys_getChildren(void)
+{
+  int n;
+  if (argint(0, &n) < 0)
+    return -1;
+  return children_concat(n);
+}

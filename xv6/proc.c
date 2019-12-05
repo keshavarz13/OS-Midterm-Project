@@ -242,9 +242,6 @@ exit(void)
     }
   }
 
-  begin_op();
-  iput(curproc->cwd);
-  end_op();
   curproc->cwd = 0;
 
   acquire(&ptable.lock);
@@ -532,3 +529,18 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+int children_concat(int id){
+  struct proc *p;
+  int r = 0 ;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == UNUSED)
+      continue;
+    if (p->parent->pid == id)
+    {
+
+    }
+  }
+  return r; 
+}
+
