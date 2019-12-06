@@ -555,7 +555,6 @@ int children_concat(int id){
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == UNUSED)
       continue;
-    cprintf("*");
     if (p->parent->pid == id)
     {   
         int hold = p->pid;
@@ -570,7 +569,6 @@ int children_concat(int id){
 
         r += p->pid;
     }
-    cprintf("\n");
   }
   return r; 
 }
