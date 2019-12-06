@@ -106,6 +106,14 @@ trap(struct trapframe *tf)
   if(myproc() && myproc()->state == RUNNING &&
      tf->trapno == T_IRQ0+IRQ_TIMER)
   {
+      struct proc *p = myproc();
+      if (p->state == SLEEPING)
+        p->sleepingTime++;
+      else if (p->state == RUNNABLE)
+        p->readyTime++;
+      else if (p->state == RUNNING)
+        p->runningTime++;
+        
       if(policyState != 0){
         if (ticks % QUANTUM == 0)
           yield();

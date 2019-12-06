@@ -29,6 +29,7 @@ int getChildren(int);
 int getCount (int);
 int changePriority (int);
 int changePolicy (int);
+int waitForChild (struct timeVariables*);
 
 
 // ulib.c
