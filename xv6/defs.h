@@ -11,15 +11,6 @@ struct stat;
 struct superblock;
 
 
-struct timeVariables
-{
-    int creationTime;
-    int terminationTime;
-    int sleepingTime;
-    int readyTime;
-    int runningTime;
-};
-
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
