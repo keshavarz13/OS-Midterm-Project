@@ -128,3 +128,12 @@ sys_changePriority(void)
     return -1;
   }
 }
+
+int 
+sys_changePolicy(void){
+  int n;
+  if (argint(0, &n) < 0)
+    return -1;
+  changeTrapPolicy(n);
+  return policy(n);
+}

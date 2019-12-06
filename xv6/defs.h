@@ -122,6 +122,7 @@ void            wakeup(void*);
 void            yield(void);
 int             children_concat(int);
 int             changePriorityFuction(int, int);
+int             policy (int);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
@@ -165,6 +166,7 @@ void            timerinit(void);
 void            idtinit(void);
 extern uint     ticks;
 void            tvinit(void);
+int             changeTrapPolicy (int);
 extern struct spinlock tickslock;
 
 // uart.c
