@@ -7,6 +7,8 @@
 #include "proc.h"
 #include "spinlock.h"
 
+int minPriority (void);
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -91,8 +93,10 @@ found:
   for (i = 0 ; i < 40 ; i++) { 
     p->sc_count[i] = 0;
   }
-  p->pid = nextpid++;
+  p->priority = 5;
+  p->calculatedPriority = minPriority();
 
+  p->pid = nextpid++;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -571,5 +575,19 @@ int children_concat(int id){
     }
   }
   return r; 
+}
+
+int minPriority (void){ 
+  struct proc *p;
+  int min = -1 ; 
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == RUNNABLE){
+      if (min == -1)
+        min = p->calculatedPriority;
+      else if(p->calculatedPriority > min)
+        min = p->calculatedPriority;
+    }
+  }
+  return min;
 }
 
