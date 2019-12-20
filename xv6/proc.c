@@ -6,8 +6,8 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
-int policyState ; 
-int minPriority (void);
+
+int minimum_priority();
 
 struct {
   struct spinlock lock;
@@ -15,7 +15,7 @@ struct {
 } ptable;
 
 static struct proc *initproc;
-
+int policy = 0;
 int nextpid = 1;
 extern void forkret(void);
 extern void trapret(void);
@@ -75,6 +75,7 @@ myproc(void) {
 static struct proc*
 allocproc(void)
 {
+  int k ; 
   struct proc *p;
   char *sp;
 
@@ -88,20 +89,23 @@ allocproc(void)
   return 0;
 
 found:
-  p->state = EMBRYO;
-  int i = 0 ; 
-  for (i = 0 ; i < 40 ; i++) { 
-    p->sc_count[i] = 0;
+  //----------------------------------------------------
+  for (k = 0 ; k < 40 ; k++) { 
+    p->sc_count[k] = 0;
   }
   p->priority = 5;
-  p->calculatedPriority = minPriority();
-  p->creationTime = ticks;
-  p->readyTime = 0;
-  p->terminationTime = 0;
-  p->runningTime = 0;
-  p->sleepingTime = 0;
+  p->calculatedPriority = minimum_priority();
 
+  p->creationTime = ticks;
+  p->terminationTime = 0; 
+  p->sleepingTime = 0; 
+  p->readyTime = 0;
+  p ->runningTime = 0; 
+
+  //----------------------------------------------------
+  p->state = EMBRYO;
   p->pid = nextpid++;
+
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -243,7 +247,9 @@ exit(void)
   struct proc *curproc = myproc();
   struct proc *p;
   int fd;
-
+  //----------------------------------------------
+  curproc -> terminationTime = ticks;
+  //----------------------------------------------
   if(curproc == initproc)
     panic("init exiting");
 
@@ -273,7 +279,6 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
-  curproc->terminationTime = ticks;
   sched();
   panic("zombie exit");
 }
@@ -336,78 +341,48 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  long int maxPriority = 0; 
+  
+  for(;;){
+    // Enable interrupts on this processor.
+    sti();
 
-  if(policyState == 0 && policyState == 1){
-    for(;;){
-      // Enable interrupts on this processor.
-      sti();
-
-      // Loop over process table looking for process to run.
-      acquire(&ptable.lock);
-      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->state != RUNNABLE)
-          continue;
-
-        // Switch to chosen process.  It is the process's job
-        // to release ptable.lock and then reacquire it
-        // before jumping back to us.
-        c->proc = p;
-        switchuvm(p);
-        p->state = RUNNING;
-
-        swtch(&(c->scheduler), p->context);
-        switchkvm();
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
-      release(&ptable.lock);
-
-    }
-  }else{
-    for(;;){
-      // Enable interrupts on this processor.
-      sti();
-
-      // Loop over process table looking for find highest calculatedPriority.
-      int flag = 0; 
-      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->state != RUNNABLE)
-          continue;
-        if(flag == 0 ){
-          flag = 1 ; 
-          maxPriority = p->calculatedPriority;
-        }else if(p->calculatedPriority < maxPriority)
-          maxPriority = p->calculatedPriority;
-      }
-      // Loop over process table looking for process to run.
-      acquire(&ptable.lock);
-      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->state != RUNNABLE)
-          continue;
-
-        // Switch to chosen process.  It is the process's job
-        // to release ptable.lock and then reacquire it
-        // before jumping back to us.
-        if(p->calculatedPriority == maxPriority){
-          c->proc = p;
-          switchuvm(p);
-          p->state = RUNNING;
-          p->calculatedPriority += p->priority;
-          swtch(&(c->scheduler), p->context);
-          switchkvm();
+    // Loop over process table looking for process to run.
+    acquire(&ptable.lock);
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+    //------------------------------------------------------------------
+    struct proc *maxp, *phold;
+     if(policy == 2){
+      maxp = p;
+        for(phold = ptable.proc; phold < &ptable.proc[NPROC]; phold++){
+          if(phold->state != RUNNABLE)
+            continue;
+          if (phold->calculatedPriority > maxp->calculatedPriority)
+            maxp = phold;
         }
-      
+        p = maxp;
+     }
 
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
-      release(&ptable.lock);
+    //------------------------------------------------------------------
 
+
+
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
     }
+    release(&ptable.lock);
 
   }
 }
@@ -442,6 +417,9 @@ sched(void)
 void
 yield(void)
 {
+  //--------------------------------------------------------
+  myproc()->calculatedPriority += myproc()->priority;
+  //--------------------------------------------------------
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
   sched();
@@ -614,34 +592,33 @@ int children_concat(int id){
   return r; 
 }
 
-int minPriority (void){ 
+int
+minimum_priority()
+{
   struct proc *p;
-  int min = -1 ; 
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->state == RUNNABLE){
-      if (min == -1)
-        min = p->calculatedPriority;
-      else if(p->calculatedPriority > min)
-        min = p->calculatedPriority;
-    }
+  int min = -1;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state == UNUSED)
+      continue;
+    if (min == -1 || p->calculatedPriority < min)
+      min = p->calculatedPriority;
   }
-  return min;
+  if(min == -1){ 
+    return 0 ;
+  }
+  else {
+    return min;
+  }
 }
 
-int policy (int t){
-  if(t < 3 && t >= 0){
-    policyState =  t ; 
-    return 1;
-  }
-  return -1;
-}
 
 int waitForChild(struct timeVariables *t)
 {
   struct proc *p;
   int havekids, pid;
   struct proc *curproc = myproc();
-  
+
   acquire(&ptable.lock);
   for(;;){
     // Scan through table looking for exited children.
@@ -661,21 +638,48 @@ int waitForChild(struct timeVariables *t)
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
+
+        //----------------------------------------------------------------------------
         t->creationTime = p->creationTime;
         t->terminationTime = p->terminationTime;
         t->runningTime = p->runningTime;
         t->readyTime = p->readyTime;
         t->sleepingTime = p->sleepingTime;
+        //----------------------------------------------------------------------------
+
         release(&ptable.lock);
         return pid;
       }
     }
+
     // No point waiting if we don't have any children.
     if(!havekids || curproc->killed){
       release(&ptable.lock);
       return -1;
     }
+
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(curproc, &ptable.lock);  //DOC: wait-sleep
   }
 }
+
+void
+update_times()
+{
+  struct proc *p;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state == UNUSED)
+      continue;
+
+    if (p->state == RUNNING)
+      p->runningTime++;
+    else if (p->state == RUNNABLE)
+      p->readyTime++;
+    else if (p->state == SLEEPING)
+      p->sleepingTime++;
+  }
+}
+
+
+

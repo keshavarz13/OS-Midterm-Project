@@ -114,35 +114,39 @@ sys_getCount(void)
   return myproc()->sc_count[n];
 }
 
-int 
+int
 sys_changePriority(void)
 {
   int n;
-  if (argint(0, &n) < 0)
+  if(argint(0, &n) < 0)
     return -1;
-  if (n > 0 && n < 6) 
-  {
-    myproc()->priority = n ; 
-    return 1; 
-  }else{
+
+  if(n < 5 && n > 1 ){
+    myproc()->priority = n;
+    return 1;
+  }else {
     return -1;
   }
+
 }
 
-int 
-sys_changePolicy(void){
+int
+sys_changePolicy(void)
+{
   int n;
-  if (argint(0, &n) < 0)
+  if(argint(0, &n) < 0)
     return -1;
-  changeTrapPolicy(n);
-  return policy(n);
+  if (n > 2 || n < 0)
+    return -1;
+  policy = n;
+  return 1;
 }
 
 int
 sys_waitForChild(void)
 {
-  struct timeVariables *tv;
-  if (argptr(1, (void*)&tv, sizeof(*tv)) < 0)
+  struct timeVariables *n;
+  if (argptr(0, (void*)&n, sizeof(*n)) < 0)
     return -1;
-  return waitForChild(tv);
+  return waitForChild(n);
 }

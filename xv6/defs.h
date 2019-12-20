@@ -9,6 +9,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+int policy ;  
 
 
 // bio.c
@@ -122,9 +123,9 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 int             children_concat(int);
-int             changePriorityFuction(int, int);
-int             policy (int);
-int             waitForChild(struct timeVariables*);   
+int             waitForChild(struct timeVariables*);  
+int             lowest_cal_priority();
+void            update_times();
 
 // swtch.S
 void            swtch(struct context**, struct context*);
@@ -168,7 +169,6 @@ void            timerinit(void);
 void            idtinit(void);
 extern uint     ticks;
 void            tvinit(void);
-int             changeTrapPolicy (int);
 extern struct spinlock tickslock;
 
 // uart.c
